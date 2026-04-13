@@ -28,6 +28,23 @@ function main() {
     throw new Error('dist/index.html not found. Run `npm run build:web` first.');
   }
 
+  // --- Inject iOS / PWA-ish head tags (expo export 的 index.html 不一定包含这些) ---
+  // GitHub Pages 会以 /<repo>/ 子路径提供站点，因此这里使用绝对子路径 /Flow/...
+  const basePath = 'Flow';
+  const headInject = [
+    `<meta name="apple-mobile-web-app-capable" content="yes">`,
+    `<meta name="apple-mobile-web-app-title" content="Flow">`,
+    `<meta name="application-name" content="Flow">`,
+    `<meta name="theme-color" content="#F2F2F7">`,
+    `<link rel="apple-touch-icon" href="/${basePath}/apple-touch-icon.png">`,
+  ].join('');
+
+  let html = fs.readFileSync(indexHtml, 'utf8');
+  if (!html.includes('rel="apple-touch-icon"')) {
+    html = html.replace('</head>', `${headInject}</head>`);
+    fs.writeFileSync(indexHtml, html);
+  }
+
   // GitHub Pages: refresh /deep-link 会走 404.html
   // 把 404.html 做成 index.html 的副本即可（URL 保持不变，SPA 根据 location 路由）
   fs.copyFileSync(indexHtml, notFound);
@@ -47,7 +64,6 @@ function main() {
 
   // 本地静态服务器（python/serve）一般不会把 /repo 前缀映射到根目录。
   // 为了让你在本地用 http://IP:PORT/Flow/ 直接预览，我们复制一份到 dist/Flow/ 下。
-  const basePath = 'Flow';
   const distBase = path.join(dist, basePath);
   ensureDir(distBase);
   copyRecursive(dist, distBase, { excludeNames: [basePath] });
