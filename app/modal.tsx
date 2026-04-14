@@ -47,6 +47,8 @@ export default function SettingsScreen() {
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const version = Constants.expoConfig?.version ?? '1.0.0';
+  const build = (globalThis as any)?.__FLOW_BUILD__ as string | undefined;
+  const versionText = build ? `${version} (${String(build).slice(0, 12)})` : version;
 
   const refresh = useCallback(async () => {
     setCount(await countTransactions());
@@ -528,7 +530,7 @@ export default function SettingsScreen() {
         <Text style={styles.bigTitle}>设置</Text>
 
         <RNView style={styles.card}>
-          <Item label="版本" right={version} />
+          <Item label="版本" right={versionText} />
         </RNView>
 
         <Text style={styles.sectionLabel}>数据</Text>

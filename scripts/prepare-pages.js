@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
@@ -25,9 +26,25 @@ function extractEntryScriptSrc(html) {
   return m ? m[1] : null;
 }
 
+function getBuildId() {
+  // 优先使用 GitHub Actions 的 commit sha；本地则用 git short sha；都拿不到就用时间戳
+  const sha = process.env.GITHUB_SHA || process.env.BUILD_SHA || process.env.BUILD_ID;
+  if (sha) return String(sha).trim().slice(0, 12);
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return String(Date.now());
+  }
+}
+
+function sanitizeBuildId(id) {
+  return String(id).replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 32) || 'dev';
+}
+
 function writeServiceWorker(dist, basePath, entrySrc) {
   // 生成 SW，确保首次联网打开后关键资源都被预缓存（尤其是 entry-*.js）
-  const cacheName = `flow-cache-v2`; // bump version to force update
+  const buildId = sanitizeBuildId(getBuildId());
+  const cacheName = `flow-cache-${buildId}`;
   const precache = [
     `/${basePath}/`,
     `/${basePath}/index.html`,
@@ -54,7 +71,7 @@ self.addEventListener('install', (event) => {
     // addAll 如果其中一个失败会导致 SW 安装失败，所以这里用 allSettled
     const results = await Promise.allSettled(PRECACHE_URLS.map((u) => cache.add(u)));
     const ok = results.filter((r) => r.status === 'fulfilled').length;
-    console.log('[flow-sw] precached', ok, '/', results.length);
+    console.log('[flow-sw] cache', CACHE_NAME, 'precached', ok, '/', results.length);
   })());
 });
 
@@ -124,6 +141,7 @@ function main() {
   // --- Inject iOS / PWA-ish head tags (expo export 的 index.html 不一定包含这些) ---
   // GitHub Pages 会以 /<repo>/ 子路径提供站点，因此这里使用绝对子路径 /Flow/...
   const basePath = 'Flow';
+  const buildId = sanitizeBuildId(getBuildId());
   const headInject = [
     `<meta name="apple-mobile-web-app-capable" content="yes">`,
     `<meta name="apple-mobile-web-app-title" content="Flow">`,
@@ -131,6 +149,7 @@ function main() {
     `<meta name="theme-color" content="#F2F2F7">`,
     `<link rel="apple-touch-icon" href="/${basePath}/apple-touch-icon.png">`,
     `<link rel="manifest" href="/${basePath}/manifest.webmanifest">`,
+    `<meta name="flow-build" content="${buildId}">`,
   ].join('');
 
   let html = fs.readFileSync(indexHtml, 'utf8');
@@ -152,6 +171,7 @@ function main() {
   (function () {
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', function () {
+      window.__FLOW_BUILD__ = '${buildId}';
       navigator.serviceWorker.register('/${basePath}/service-worker.js', { scope: '/${basePath}/' }).catch(function(){});
     });
   })();
