@@ -241,8 +241,17 @@ export default function LedgerListScreen() {
     if (Platform.OS === 'web') {
       const ok = typeof window !== 'undefined' ? window.confirm('确定要删除这条记录吗？') : false;
       if (!ok) return;
-      await deleteTransaction(row.id);
-      await refresh();
+      try {
+        await deleteTransaction(row.id);
+        await refresh();
+        // 删除后关闭编辑弹窗，避免看起来“没反应”
+        setOpen(false);
+        setEditingId(null);
+      } catch (e: any) {
+        // 避免静默失败
+        console.error(e);
+        if (typeof window !== 'undefined') window.alert(`删除失败：${e?.message ?? String(e)}`);
+      }
       return;
     }
 
@@ -254,6 +263,8 @@ export default function LedgerListScreen() {
         onPress: async () => {
           await deleteTransaction(row.id);
           await refresh();
+          setOpen(false);
+          setEditingId(null);
         },
       },
     ]);
