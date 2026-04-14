@@ -146,6 +146,9 @@ export default function LedgerListScreen() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [webSheet, setWebSheet] = useState<null | { title: string; options: Array<{ text: string; onPress?: () => void; danger?: boolean }> }>(
+    null
+  );
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -237,36 +240,25 @@ export default function LedgerListScreen() {
   };
 
   const onDelete = async (row: any) => {
-    // react-native-web 的 Alert.alert 在多按钮场景支持不稳定；Web 端用 confirm 更可靠
+    const doDelete = async () => {
+      await deleteTransaction(row.id);
+      await refresh();
+      setOpen(false);
+      setEditingId(null);
+    };
+
+    // iOS Safari / PWA 下系统 confirm/alert 也可能不弹或无回调；Web 端统一用自定义 sheet
     if (Platform.OS === 'web') {
-      const ok = typeof window !== 'undefined' ? window.confirm('确定要删除这条记录吗？') : false;
-      if (!ok) return;
-      try {
-        await deleteTransaction(row.id);
-        await refresh();
-        // 删除后关闭编辑弹窗，避免看起来“没反应”
-        setOpen(false);
-        setEditingId(null);
-      } catch (e: any) {
-        // 避免静默失败
-        console.error(e);
-        if (typeof window !== 'undefined') window.alert(`删除失败：${e?.message ?? String(e)}`);
-      }
+      openWebSheet('删除账目', [
+        { text: '取消' },
+        { text: '删除', danger: true, onPress: () => void doDelete() },
+      ]);
       return;
     }
 
     Alert.alert('删除账目', '确定要删除这条记录吗？', [
       { text: '取消', style: 'cancel' },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteTransaction(row.id);
-          await refresh();
-          setOpen(false);
-          setEditingId(null);
-        },
-      },
+      { text: '删除', style: 'destructive', onPress: () => void doDelete() },
     ]);
   };
 
@@ -297,6 +289,10 @@ export default function LedgerListScreen() {
         <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
       </Pressable>
     );
+  };
+
+  const openWebSheet = (title: string, options: Array<{ text: string; onPress?: () => void; danger?: boolean }>) => {
+    setWebSheet({ title, options });
   };
 
   const toggleExpanded = (keyMs: number) => {
@@ -410,17 +406,30 @@ export default function LedgerListScreen() {
               <Pressable
                 onPress={() => {
                   const options = cats.length ? cats : [{ id: '', name: '未分类', color: '#BDBDBD', createdAt: 0 } as any];
-                  Alert.alert(
-                    '选择大类',
-                    undefined,
-                    options.slice(0, 8).map((c) => ({
-                      text: c.name,
-                      onPress: () => {
-                        setCategoryId(c.id || null);
-                        setSubName(subOptionsForMain(c.name)[0] ?? '其他');
-                      },
-                    }))
-                  );
+                  if (Platform.OS === 'web') {
+                    openWebSheet(
+                      '选择大类',
+                      options.map((c) => ({
+                        text: c.name,
+                        onPress: () => {
+                          setCategoryId(c.id || null);
+                          setSubName(subOptionsForMain(c.name)[0] ?? '其他');
+                        },
+                      }))
+                    );
+                  } else {
+                    Alert.alert(
+                      '选择大类',
+                      undefined,
+                      options.slice(0, 8).map((c) => ({
+                        text: c.name,
+                        onPress: () => {
+                          setCategoryId(c.id || null);
+                          setSubName(subOptionsForMain(c.name)[0] ?? '其他');
+                        },
+                      }))
+                    );
+                  }
                 }}
                 style={styles.row}>
                 <Text style={styles.rowLabel}>大类</Text>
@@ -436,14 +445,24 @@ export default function LedgerListScreen() {
                 onPress={() => {
                   const mainName = cats.find((c) => c.id === categoryId)?.name ?? '其他';
                   const subs = subOptionsForMain(mainName);
-                  Alert.alert(
-                    '选择小类',
-                    undefined,
-                    subs.map((s) => ({
-                      text: s,
-                      onPress: () => setSubName(s),
-                    }))
-                  );
+                  if (Platform.OS === 'web') {
+                    openWebSheet(
+                      '选择小类',
+                      subs.map((s) => ({
+                        text: s,
+                        onPress: () => setSubName(s),
+                      }))
+                    );
+                  } else {
+                    Alert.alert(
+                      '选择小类',
+                      undefined,
+                      subs.map((s) => ({
+                        text: s,
+                        onPress: () => setSubName(s),
+                      }))
+                    );
+                  }
                 }}
                 style={styles.row}>
                 <Text style={styles.rowLabel}>小类</Text>
@@ -469,11 +488,8 @@ export default function LedgerListScreen() {
                   </Pressable>
                   <Pressable
                     onPress={() => {
-                      Alert.alert('选择时间', undefined, [
-                        {
-                          text: '现在',
-                          onPress: () => setDateMs(Date.now()),
-                        },
+                      const opts = [
+                        { text: '现在', onPress: () => setDateMs(Date.now()) },
                         {
                           text: '12:00',
                           onPress: () => {
@@ -490,8 +506,32 @@ export default function LedgerListScreen() {
                             setDateMs(d.getTime());
                           },
                         },
-                        { text: '取消', style: 'cancel' },
-                      ]);
+                        { text: '取消' },
+                      ];
+                      if (Platform.OS === 'web') {
+                        openWebSheet('选择时间', opts);
+                      } else {
+                        Alert.alert('选择时间', undefined, [
+                          { text: '现在', onPress: () => setDateMs(Date.now()) },
+                          {
+                            text: '12:00',
+                            onPress: () => {
+                              const d = new Date(dateMs);
+                              d.setHours(12, 0, 0, 0);
+                              setDateMs(d.getTime());
+                            },
+                          },
+                          {
+                            text: '18:00',
+                            onPress: () => {
+                              const d = new Date(dateMs);
+                              d.setHours(18, 0, 0, 0);
+                              setDateMs(d.getTime());
+                            },
+                          },
+                          { text: '取消', style: 'cancel' },
+                        ]);
+                      }
                     }}
                     style={styles.pill}>
                     <Text style={styles.pillText}>{formatTime(dateMs)}</Text>
@@ -563,6 +603,29 @@ export default function LedgerListScreen() {
             />
           </RNView>
         </RNView>
+      </Modal>
+
+      {/* Web action sheet：用于替代 Alert/confirm（iOS Safari / PWA 下不稳定） */}
+      <Modal visible={!!webSheet} transparent animationType="fade" onRequestClose={() => setWebSheet(null)}>
+        <Pressable style={styles.webSheetMask} onPress={() => setWebSheet(null)}>
+          <RNView style={[styles.webSheetWrap, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <Text style={styles.webSheetTitle}>{webSheet?.title ?? ''}</Text>
+            <RNView style={styles.webSheetCard}>
+              {(webSheet?.options ?? []).map((o, idx) => (
+                <Pressable
+                  key={`${o.text}-${idx}`}
+                  onPress={() => {
+                    setWebSheet(null);
+                    o.onPress?.();
+                  }}
+                  style={({ pressed }) => [styles.webSheetBtn, pressed && { opacity: 0.7 }]}>
+                  <Text style={[styles.webSheetBtnText, o.danger && { color: '#E53935' }]}>{o.text}</Text>
+                  {idx !== (webSheet?.options?.length ?? 0) - 1 ? <RNView style={styles.webSheetSep} /> : null}
+                </Pressable>
+              ))}
+            </RNView>
+          </RNView>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -703,4 +766,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dpDoneText: { fontWeight: '900' },
+
+  webSheetMask: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  webSheetWrap: { paddingHorizontal: 14, paddingTop: 10 },
+  webSheetTitle: { textAlign: 'center', color: '#777', fontWeight: '800', marginBottom: 10 },
+  webSheetCard: { backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden' },
+  webSheetBtn: { paddingVertical: 14, paddingHorizontal: 16 },
+  webSheetBtnText: { textAlign: 'center', fontWeight: '800', color: '#111' },
+  webSheetSep: { height: StyleSheet.hairlineWidth, backgroundColor: '#eee', marginTop: 14 },
 });
