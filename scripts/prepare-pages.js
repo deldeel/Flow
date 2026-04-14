@@ -19,6 +19,99 @@ function copyRecursive(src, dest, { excludeNames = [] } = {}) {
   fs.copyFileSync(src, dest);
 }
 
+function extractEntryScriptSrc(html) {
+  // <script src="/Flow/_expo/static/js/web/entry-xxxx.js" defer></script>
+  const m = html.match(/<script[^>]+src="([^"]*\/_expo\/static\/js\/web\/entry-[^"]+\.js)"/i);
+  return m ? m[1] : null;
+}
+
+function writeServiceWorker(dist, basePath, entrySrc) {
+  // 生成 SW，确保首次联网打开后关键资源都被预缓存（尤其是 entry-*.js）
+  const cacheName = `flow-cache-v2`; // bump version to force update
+  const precache = [
+    `/${basePath}/`,
+    `/${basePath}/index.html`,
+    `/${basePath}/404.html`,
+    `/${basePath}/favicon.ico`,
+    `/${basePath}/apple-touch-icon.png`,
+    `/${basePath}/manifest.webmanifest`,
+  ];
+  if (entrySrc) precache.push(entrySrc);
+
+  const sw = `/* eslint-disable no-restricted-globals */
+// Flow PWA offline cache (generated)
+const CACHE_NAME = '${cacheName}';
+const PRECACHE_URLS = ${JSON.stringify(precache, null, 2)};
+
+function isSameOrigin(url) {
+  try { return new URL(url).origin === self.location.origin; } catch { return false; }
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    self.skipWaiting();
+    const cache = await caches.open(CACHE_NAME);
+    // addAll 如果其中一个失败会导致 SW 安装失败，所以这里用 allSettled
+    const results = await Promise.allSettled(PRECACHE_URLS.map((u) => cache.add(u)));
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    console.log('[flow-sw] precached', ok, '/', results.length);
+  })());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => (k === CACHE_NAME ? Promise.resolve() : caches.delete(k))));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  if (!isSameOrigin(req.url)) return;
+
+  // 导航：离线回退到 index.html
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const res = await fetch(req);
+        cache.put(req, res.clone());
+        return res;
+      } catch {
+        return (await cache.match('/${basePath}/index.html')) || (await cache.match('/${basePath}/'));
+      }
+    })());
+    return;
+  }
+
+  // 静态资源：缓存优先
+  const url = new URL(req.url);
+  const isAsset =
+    url.pathname.includes('/_expo/') ||
+    url.pathname.includes('/assets/') ||
+    /\\.(js|css|png|jpg|jpeg|gif|webp|svg|ico|ttf|otf|woff|woff2|json)$/.test(url.pathname);
+  if (!isAsset) return;
+
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    try {
+      const res = await fetch(req);
+      cache.put(req, res.clone());
+      return res;
+    } catch {
+      return cached || Response.error();
+    }
+  })());
+});
+`;
+
+  fs.writeFileSync(path.join(dist, 'service-worker.js'), sw);
+}
+
 function main() {
   const dist = path.join(process.cwd(), 'dist');
   const indexHtml = path.join(dist, 'index.html');
@@ -45,6 +138,11 @@ function main() {
     html = html.replace('</head>', `${headInject}</head>`);
     fs.writeFileSync(indexHtml, html);
   }
+
+  // 生成 service-worker.js（包含 entry-*.js 的预缓存列表）
+  html = fs.readFileSync(indexHtml, 'utf8');
+  const entrySrc = extractEntryScriptSrc(html);
+  writeServiceWorker(dist, basePath, entrySrc);
 
   // 注册 Service Worker（离线可用）
   html = fs.readFileSync(indexHtml, 'utf8');
