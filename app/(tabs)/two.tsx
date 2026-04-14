@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -235,7 +236,16 @@ export default function LedgerListScreen() {
     setOpen(true);
   };
 
-  const onDelete = (row: any) => {
+  const onDelete = async (row: any) => {
+    // react-native-web 的 Alert.alert 在多按钮场景支持不稳定；Web 端用 confirm 更可靠
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' ? window.confirm('确定要删除这条记录吗？') : false;
+      if (!ok) return;
+      await deleteTransaction(row.id);
+      await refresh();
+      return;
+    }
+
     Alert.alert('删除账目', '确定要删除这条记录吗？', [
       { text: '取消', style: 'cancel' },
       {
@@ -243,7 +253,7 @@ export default function LedgerListScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteTransaction(row.id);
-          refresh();
+          await refresh();
         },
       },
     ]);
