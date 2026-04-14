@@ -37,11 +37,28 @@ function main() {
     `<meta name="application-name" content="Flow">`,
     `<meta name="theme-color" content="#F2F2F7">`,
     `<link rel="apple-touch-icon" href="/${basePath}/apple-touch-icon.png">`,
+    `<link rel="manifest" href="/${basePath}/manifest.webmanifest">`,
   ].join('');
 
   let html = fs.readFileSync(indexHtml, 'utf8');
   if (!html.includes('rel="apple-touch-icon"')) {
     html = html.replace('</head>', `${headInject}</head>`);
+    fs.writeFileSync(indexHtml, html);
+  }
+
+  // 注册 Service Worker（离线可用）
+  html = fs.readFileSync(indexHtml, 'utf8');
+  if (!html.includes('service-worker.js')) {
+    const swRegister = `
+<script>
+  (function () {
+    if (!('serviceWorker' in navigator)) return;
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/${basePath}/service-worker.js', { scope: '/${basePath}/' }).catch(function(){});
+    });
+  })();
+</script>`;
+    html = html.replace('</body>', `${swRegister}\n</body>`);
     fs.writeFileSync(indexHtml, html);
   }
 
