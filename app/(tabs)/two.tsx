@@ -19,9 +19,31 @@ import { deleteTransaction, listCategories, listTransactionsByRange, upsertTrans
 import type { Category, MoneyType } from '@/lib/types';
 
 type FilterKey = 'day' | 'week' | 'month' | 'year';
+type IconName = React.ComponentProps<typeof FontAwesome>['name'];
 
 function pad2(n: number) {
   return String(n).padStart(2, '0');
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const h = String(hex ?? '').trim();
+  if (!h.startsWith('#')) return `rgba(189,189,189,${alpha})`;
+  const raw = h.slice(1);
+  const full =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((c) => `${c}${c}`)
+          .join('')
+      : raw.length === 6
+        ? raw
+        : null;
+  if (!full) return `rgba(189,189,189,${alpha})`;
+  const r = Number.parseInt(full.slice(0, 2), 16);
+  const g = Number.parseInt(full.slice(2, 4), 16);
+  const b = Number.parseInt(full.slice(4, 6), 16);
+  if (![r, g, b].every(Number.isFinite)) return `rgba(189,189,189,${alpha})`;
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function ymd(ms: number) {
@@ -119,6 +141,68 @@ function splitNote(raw: string) {
   if (parts.length >= 2) return { sub: parts[0], remark: parts.slice(1).join(' · ') };
   if (parts.length === 1) return { sub: parts[0], remark: '' };
   return { sub: '其他', remark: '' };
+}
+
+const SUB_ICON: Record<string, Record<string, { icon: IconName; color: string }>> = {
+  餐饮: {
+    早餐: { icon: 'sun-o', color: '#FFCC00' },
+    中餐: { icon: 'cutlery', color: '#FF8A65' },
+    晚餐: { icon: 'moon-o', color: '#9B59B6' },
+    加餐: { icon: 'coffee', color: '#8D6E63' },
+    咖啡: { icon: 'coffee', color: '#8D6E63' },
+    零食: { icon: 'birthday-cake', color: '#FF6B6B' },
+    饮料: { icon: 'glass', color: '#4D96FF' },
+    买菜: { icon: 'shopping-cart', color: '#6BCB77' },
+    水果: { icon: 'leaf', color: '#2E7D32' },
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+  购物: {
+    日用品: { icon: 'shopping-bag', color: '#26A69A' },
+    衣物: { icon: 'shopping-bag', color: '#9B59B6' },
+    数码: { icon: 'mobile', color: '#4D96FF' },
+    礼物: { icon: 'gift', color: '#FF6B6B' },
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+  交通: {
+    公交: { icon: 'bus', color: '#4D96FF' },
+    地铁: { icon: 'subway', color: '#9B59B6' },
+    打车: { icon: 'taxi', color: '#FFCC00' },
+    加油: { icon: 'road', color: '#FF8A65' },
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+  生活: {
+    房租: { icon: 'home', color: '#4D96FF' },
+    水电: { icon: 'bolt', color: '#FFCC00' },
+    话费: { icon: 'phone', color: '#26A69A' },
+    医疗: { icon: 'medkit', color: '#FF6B6B' },
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+  娱乐: {
+    电影: { icon: 'film', color: '#FF6B6B' },
+    游戏: { icon: 'gamepad', color: '#9B59B6' },
+    运动: { icon: 'soccer-ball-o', color: '#6BCB77' },
+    旅行: { icon: 'plane', color: '#4D96FF' },
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+  其他: {
+    人情: { icon: 'users', color: '#FF8A65' },
+    学习: { icon: 'book', color: '#4D96FF' },
+    宠物: { icon: 'paw', color: '#9B59B6' },
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+  未分类: {
+    其他: { icon: 'tag', color: '#BDBDBD' },
+  },
+};
+
+function iconForRow(main: string, note: string | null | undefined, fallbackColor: string | null | undefined) {
+  const m = (main ?? '未分类').trim() || '未分类';
+  const { sub } = splitNote(note ?? '');
+  const s = (sub ?? '').trim() || '其他';
+  const found = SUB_ICON[m]?.[s] ?? SUB_ICON[m]?.['其他'] ?? SUB_ICON['未分类']?.['其他'];
+  const color = found?.color ?? (fallbackColor ?? '#BDBDBD');
+  const icon = found?.icon ?? ('tag' as IconName);
+  return { icon, color, bg: hexToRgba(color, 0.14) };
 }
 
 function subOptionsForMain(main: string) {
@@ -281,11 +365,11 @@ export default function LedgerListScreen() {
     refresh();
   };
 
-  const FilterBtn = ({ k, label, icon }: { k: FilterKey; label: string; icon: any }) => {
+  const FilterBtn = ({ k, label, icon, color }: { k: FilterKey; label: string; icon: any; color: string }) => {
     const active = filter === k;
     return (
       <Pressable onPress={() => setFilter(k)} style={[styles.filterBtn, active && styles.filterBtnActive]}>
-        <FontAwesome name={icon} size={16} color={active ? '#111' : '#777'} />
+        <FontAwesome name={icon} size={16} color={color} style={{ opacity: active ? 1 : 0.35 }} />
         <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
       </Pressable>
     );
@@ -321,10 +405,10 @@ export default function LedgerListScreen() {
       </RNView>
 
       <RNView style={styles.filtersCard}>
-        <FilterBtn k="day" label="天" icon="sun-o" />
-        <FilterBtn k="week" label="周" icon="calendar" />
-        <FilterBtn k="month" label="月" icon="circle-o" />
-        <FilterBtn k="year" label="年" icon="calendar-o" />
+        <FilterBtn k="day" label="天" icon="sun-o" color="#FFCC00" />
+        <FilterBtn k="week" label="周" icon="calendar" color="#4D96FF" />
+        <FilterBtn k="month" label="月" icon="circle-o" color="#6BCB77" />
+        <FilterBtn k="year" label="年" icon="calendar-o" color="#9B59B6" />
       </RNView>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
@@ -349,18 +433,23 @@ export default function LedgerListScreen() {
                   {g.list.map((item: any, idx: number) => {
                     const cat = item.categoryName ?? '未分类';
                     const amountColor = item.type === 'expense' ? '#E53935' : '#2E7D32';
+                    const rowIcon = iconForRow(cat, item.note, item.categoryColor);
                     return (
                       <Pressable
                         key={item.id}
                         onPress={() => openEdit(item)}
-                        onLongPress={() => onDelete(item)}
                         style={({ pressed }) => [styles.itemRow, pressed && { opacity: 0.7 }]}>
-                        <RNView style={{ flex: 1 }}>
-                          <Text style={styles.itemTitle}>
-                            {cat}
-                            {item.note ? ` · ${item.note}` : ''}
-                          </Text>
-                          <Text style={styles.itemSub}>{cnDateFromYmd(ymd(item.date))}</Text>
+                        <RNView style={styles.itemLeft}>
+                          <RNView style={[styles.itemIconWrap, { backgroundColor: rowIcon.bg }]}>
+                            <FontAwesome name={rowIcon.icon} size={15} color={rowIcon.color} />
+                          </RNView>
+                          <RNView style={{ flex: 1 }}>
+                            <Text style={styles.itemTitle}>
+                              {cat}
+                              {item.note ? ` · ${item.note}` : ''}
+                            </Text>
+                            <Text style={styles.itemSub}>{cnDateFromYmd(ymd(item.date))}</Text>
+                          </RNView>
                         </RNView>
                         <Text style={[styles.itemAmount, { color: amountColor }]}>¥{Number(item.amount).toFixed(2)}</Text>
                         {idx !== g.list.length - 1 ? <RNView style={styles.sep} /> : null}
@@ -676,6 +765,8 @@ const styles = StyleSheet.create({
 
   card: { backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden' },
   itemRow: { paddingHorizontal: 16, paddingVertical: 14 },
+  itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 86 },
+  itemIconWrap: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   itemTitle: { fontSize: 16, fontWeight: '800' },
   itemSub: { marginTop: 4, fontSize: 12, color: '#999' },
   itemAmount: { position: 'absolute', right: 16, top: 20, fontWeight: '900' },

@@ -11,8 +11,9 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <title>Flow</title>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Flow" />
         <meta name="application-name" content="Flow" />
         <meta name="theme-color" content="#F2F2F7" />
@@ -37,11 +38,11 @@ export default function Root({ children }: { children: React.ReactNode }) {
 }
 
 const responsiveBackground = `
-body {
-  background-color: #fff;
+html, body {
+  background-color: #F2F2F7;
 }
 @media (prefers-color-scheme: dark) {
-  body {
+  html, body {
     background-color: #000;
   }
 }`;

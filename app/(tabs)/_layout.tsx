@@ -39,8 +39,10 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarInactiveTintColor: '#8E8E93',
+        sceneStyle: { backgroundColor: '#F2F2F7' },
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#F2F2F7',
           borderTopColor: '#E5E5E5',
           ...(isWeb
             ? {
@@ -62,6 +64,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: '记一笔',
+          tabBarActiveTintColor: '#4D96FF',
           tabBarIcon: ({ color }) => <TabBarIcon name="pencil" color={color} />,
           headerRight: () => <HeaderGear colorScheme={colorScheme} />,
         }}
@@ -70,6 +73,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: '流水',
+          tabBarActiveTintColor: '#26A69A',
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
           headerRight: () => <HeaderGear colorScheme={colorScheme} />,
         }}
@@ -78,6 +82,7 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: '图表',
+          tabBarActiveTintColor: '#9B59B6',
           tabBarIcon: ({ color }) => <TabBarIcon name="bar-chart" color={color} />,
           headerRight: () => <HeaderGear colorScheme={colorScheme} />,
         }}

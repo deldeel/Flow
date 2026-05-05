@@ -51,7 +51,8 @@ function getLocalBuildNumber() {
 function writeServiceWorker(dist, basePath, entrySrc) {
   // 生成 SW，确保首次联网打开后关键资源都被预缓存（尤其是 entry-*.js）
   const buildId = sanitizeBuildId(getBuildId());
-  const cacheName = `flow-cache-${buildId}`;
+  const localBuild = getLocalBuildNumber();
+  const cacheName = `flow-cache-${buildId}-${localBuild}`;
   const precache = [
     `/${basePath}/`,
     `/${basePath}/index.html`,
@@ -149,6 +150,7 @@ function main() {
   // GitHub Pages 会以 /<repo>/ 子路径提供站点，因此这里使用绝对子路径 /Flow/...
   const basePath = 'Flow';
   const buildId = sanitizeBuildId(getBuildId());
+  const bgStyle = `<style id="flow-bg">html,body{background-color:#F2F2F7;}@media (prefers-color-scheme: dark){html,body{background-color:#000;}}</style>`;
   const headInject = [
     `<meta name="apple-mobile-web-app-capable" content="yes">`,
     `<meta name="apple-mobile-web-app-title" content="Flow">`,
@@ -160,8 +162,20 @@ function main() {
   ].join('');
 
   let html = fs.readFileSync(indexHtml, 'utf8');
+  if (!/name="viewport"[^>]+viewport-fit=cover/i.test(html)) {
+    html = html.replace(/<meta[^>]+name="viewport"[^>]+content="([^"]*)"[^>]*>/i, (m, content) => {
+      const c = String(content ?? '');
+      const next = c.includes('viewport-fit=cover') ? c : `${c}, viewport-fit=cover`;
+      return m.replace(content, next);
+    });
+  }
+  if (!html.includes('id="flow-bg"')) {
+    html = html.replace('</head>', `${bgStyle}</head>`);
+  }
   if (!html.includes('rel="apple-touch-icon"')) {
     html = html.replace('</head>', `${headInject}</head>`);
+    fs.writeFileSync(indexHtml, html);
+  } else {
     fs.writeFileSync(indexHtml, html);
   }
 

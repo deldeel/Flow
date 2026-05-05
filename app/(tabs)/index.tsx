@@ -10,7 +10,7 @@ import { listCategories, upsertCategory, upsertTransaction } from '@/lib/repo';
 import type { Category } from '@/lib/types';
 
 type MainCatKey = '餐饮' | '购物' | '交通' | '生活' | '娱乐' | '其他';
-type SubItem = { key: string; label: string; icon: React.ComponentProps<typeof FontAwesome>['name'] };
+type SubItem = { key: string; label: string; icon: React.ComponentProps<typeof FontAwesome>['name']; color?: string };
 
 const MAIN_CATEGORIES: { id: string; name: MainCatKey; color: string }[] = [
   { id: 'cat_food', name: '餐饮', color: '#4D96FF' },
@@ -23,50 +23,50 @@ const MAIN_CATEGORIES: { id: string; name: MainCatKey; color: string }[] = [
 
 const SUB: Record<MainCatKey, SubItem[]> = {
   餐饮: [
-    { key: '早餐', label: '早餐', icon: 'sun-o' },
-    { key: '中餐', label: '中餐', icon: 'cutlery' },
-    { key: '晚餐', label: '晚餐', icon: 'moon-o' },
-    { key: '加餐', label: '加餐', icon: 'coffee' },
-    { key: '咖啡', label: '咖啡', icon: 'coffee' },
-    { key: '零食', label: '零食', icon: 'birthday-cake' },
-    { key: '饮料', label: '饮料', icon: 'glass' },
-    { key: '买菜', label: '买菜', icon: 'shopping-cart' },
-    { key: '水果', label: '水果', icon: 'leaf' },
-    { key: '其他', label: '其他', icon: 'tag' },
+    { key: '早餐', label: '早餐', icon: 'sun-o', color: '#FFCC00' },
+    { key: '中餐', label: '中餐', icon: 'cutlery', color: '#FF8A65' },
+    { key: '晚餐', label: '晚餐', icon: 'moon-o', color: '#9B59B6' },
+    { key: '加餐', label: '加餐', icon: 'coffee', color: '#8D6E63' },
+    { key: '咖啡', label: '咖啡', icon: 'coffee', color: '#8D6E63' },
+    { key: '零食', label: '零食', icon: 'birthday-cake', color: '#FF6B6B' },
+    { key: '饮料', label: '饮料', icon: 'glass', color: '#4D96FF' },
+    { key: '买菜', label: '买菜', icon: 'shopping-cart', color: '#6BCB77' },
+    { key: '水果', label: '水果', icon: 'leaf', color: '#2E7D32' },
+    { key: '其他', label: '其他', icon: 'tag', color: '#BDBDBD' },
   ],
   购物: [
-    { key: '日用品', label: '日用品', icon: 'shopping-bag' },
-    { key: '衣物', label: '衣物', icon: 'shopping-bag' },
-    { key: '数码', label: '数码', icon: 'mobile' },
-    { key: '礼物', label: '礼物', icon: 'gift' },
-    { key: '其他', label: '其他', icon: 'tag' },
+    { key: '日用品', label: '日用品', icon: 'shopping-bag', color: '#26A69A' },
+    { key: '衣物', label: '衣物', icon: 'shopping-bag', color: '#9B59B6' },
+    { key: '数码', label: '数码', icon: 'mobile', color: '#4D96FF' },
+    { key: '礼物', label: '礼物', icon: 'gift', color: '#FF6B6B' },
+    { key: '其他', label: '其他', icon: 'tag', color: '#BDBDBD' },
   ],
   交通: [
-    { key: '公交', label: '公交', icon: 'bus' },
-    { key: '地铁', label: '地铁', icon: 'subway' },
-    { key: '打车', label: '打车', icon: 'taxi' },
-    { key: '加油', label: '加油', icon: 'road' },
-    { key: '其他', label: '其他', icon: 'tag' },
+    { key: '公交', label: '公交', icon: 'bus', color: '#4D96FF' },
+    { key: '地铁', label: '地铁', icon: 'subway', color: '#9B59B6' },
+    { key: '打车', label: '打车', icon: 'taxi', color: '#FFCC00' },
+    { key: '加油', label: '加油', icon: 'road', color: '#FF8A65' },
+    { key: '其他', label: '其他', icon: 'tag', color: '#BDBDBD' },
   ],
   生活: [
-    { key: '房租', label: '房租', icon: 'home' },
-    { key: '水电', label: '水电', icon: 'bolt' },
-    { key: '话费', label: '话费', icon: 'phone' },
-    { key: '医疗', label: '医疗', icon: 'medkit' },
-    { key: '其他', label: '其他', icon: 'tag' },
+    { key: '房租', label: '房租', icon: 'home', color: '#4D96FF' },
+    { key: '水电', label: '水电', icon: 'bolt', color: '#FFCC00' },
+    { key: '话费', label: '话费', icon: 'phone', color: '#26A69A' },
+    { key: '医疗', label: '医疗', icon: 'medkit', color: '#FF6B6B' },
+    { key: '其他', label: '其他', icon: 'tag', color: '#BDBDBD' },
   ],
   娱乐: [
-    { key: '电影', label: '电影', icon: 'film' },
-    { key: '游戏', label: '游戏', icon: 'gamepad' },
-    { key: '运动', label: '运动', icon: 'soccer-ball-o' },
-    { key: '旅行', label: '旅行', icon: 'plane' },
-    { key: '其他', label: '其他', icon: 'tag' },
+    { key: '电影', label: '电影', icon: 'film', color: '#FF6B6B' },
+    { key: '游戏', label: '游戏', icon: 'gamepad', color: '#9B59B6' },
+    { key: '运动', label: '运动', icon: 'soccer-ball-o', color: '#6BCB77' },
+    { key: '旅行', label: '旅行', icon: 'plane', color: '#4D96FF' },
+    { key: '其他', label: '其他', icon: 'tag', color: '#BDBDBD' },
   ],
   其他: [
-    { key: '人情', label: '人情', icon: 'users' },
-    { key: '学习', label: '学习', icon: 'book' },
-    { key: '宠物', label: '宠物', icon: 'paw' },
-    { key: '其他', label: '其他', icon: 'tag' },
+    { key: '人情', label: '人情', icon: 'users', color: '#FF8A65' },
+    { key: '学习', label: '学习', icon: 'book', color: '#4D96FF' },
+    { key: '宠物', label: '宠物', icon: 'paw', color: '#9B59B6' },
+    { key: '其他', label: '其他', icon: 'tag', color: '#BDBDBD' },
   ],
 };
 
@@ -207,6 +207,7 @@ export default function EntryScreen() {
         <RNView style={styles.grid}>
           {SUB[main].map((item) => {
             const active = item.key === sub.key;
+            const iconColor = item.color ?? '#4D96FF';
             return (
               <Pressable
                 key={item.key}
@@ -217,7 +218,7 @@ export default function EntryScreen() {
                   pressed && { opacity: 0.7 },
                 ]}>
                 <RNView style={styles.gridIconWrap}>
-                  <FontAwesome name={item.icon} size={22} color={active ? '#4D96FF' : '#888'} />
+                  <FontAwesome name={item.icon} size={22} color={iconColor} style={{ opacity: active ? 1 : 0.35 }} />
                 </RNView>
                 <Text style={styles.gridLabel}>{item.label}</Text>
               </Pressable>
@@ -229,7 +230,7 @@ export default function EntryScreen() {
       {/* 备注 / 时间栏：固定在键盘上方，避免被键盘遮挡导致点不到 */}
       <RNView style={styles.bottomBar}>
         <RNView style={styles.noteRow}>
-          <FontAwesome name="pencil-square-o" size={16} color="#999" />
+          <FontAwesome name="pencil-square-o" size={16} color="#4D96FF" />
           <TextInput
             value={note}
             onChangeText={setNote}
@@ -240,7 +241,7 @@ export default function EntryScreen() {
         </RNView>
         <Pressable onPress={openTimeMenu} hitSlop={12} style={({ pressed }) => [styles.timeRow, pressed && { opacity: 0.7 }]}>
           <Text style={styles.timeText}>时间：{todayText(dateMs)}</Text>
-          <FontAwesome name="chevron-down" size={12} color="#999" />
+          <FontAwesome name="chevron-down" size={12} color="#4D96FF" />
         </Pressable>
       </RNView>
 

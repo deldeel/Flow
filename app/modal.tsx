@@ -550,13 +550,13 @@ export default function SettingsScreen() {
         <RNView style={styles.card}>
           <Item label="记录数" right={String(count)} />
           <RNView style={styles.sep} />
-          <Item label="导入 Excel" icon="download" onPress={importExcel} />
+          <Item label="导入 Excel" icon="download" color="#26A69A" onPress={importExcel} />
           <RNView style={styles.sep} />
-          <Item label="导出 Excel" icon="upload" onPress={exportExcel} />
+          <Item label="导出 Excel" icon="upload" color="#4D96FF" onPress={exportExcel} />
           <RNView style={styles.sep} />
-          <Item label="导入 CSV" icon="download" onPress={importCsv} />
+          <Item label="导入 CSV" icon="download" color="#26A69A" onPress={importCsv} />
           <RNView style={styles.sep} />
-          <Item label="导出 CSV" icon="upload" onPress={exportCsv} />
+          <Item label="导出 CSV" icon="upload" color="#4D96FF" onPress={exportCsv} />
           <RNView style={styles.sep} />
           <Item
             label="清空全部数据"

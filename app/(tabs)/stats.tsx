@@ -104,8 +104,8 @@ export default function StatsScreen() {
         <RNView style={[styles.segmentRow, { marginTop: 10 }]}>
           {(
             [
-              { k: 'bar', label: '条形图', icon: 'bar-chart' },
-              { k: 'pie', label: '饼图', icon: 'pie-chart' },
+              { k: 'bar', label: '条形图', icon: 'bar-chart', color: '#4D96FF' },
+              { k: 'pie', label: '饼图', icon: 'pie-chart', color: '#9B59B6' },
             ] as const
           ).map((x) => {
             const active = chart === x.k;
@@ -115,7 +115,7 @@ export default function StatsScreen() {
                 onPress={() => setChart(x.k)}
                 style={[styles.segmentBtn, active && styles.segmentBtnActive]}>
                 <RNView style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <FontAwesome name={x.icon as any} size={14} color={active ? '#111' : '#777'} />
+                  <FontAwesome name={x.icon as any} size={14} color={x.color} style={{ opacity: active ? 1 : 0.35 }} />
                   <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{x.label}</Text>
                 </RNView>
               </Pressable>

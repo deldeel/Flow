@@ -4,6 +4,8 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -71,13 +73,45 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const backgroundColor = colorScheme === 'dark' ? '#000' : '#F2F2F7';
+
+  const light = {
+    ...DefaultTheme,
+    colors: { ...DefaultTheme.colors, background: '#F2F2F7', card: '#F2F2F7' },
+  };
+  const dark = {
+    ...DarkTheme,
+    colors: { ...DarkTheme.colors, background: '#000', card: '#000' },
+  };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={colorScheme === 'dark' ? dark : light}>
+      <SafeAreaProvider>
+        <RootChrome backgroundColor={backgroundColor} />
+      </SafeAreaProvider>
+    </ThemeProvider>
+  );
+}
+
+function RootChrome({ backgroundColor }: { backgroundColor: string }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor }}>
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          height: insets.top,
+          backgroundColor,
+        }}
+      />
+      <Stack screenOptions={{ contentStyle: { backgroundColor } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
-    </ThemeProvider>
+    </View>
   );
 }
