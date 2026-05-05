@@ -17,6 +17,8 @@ import { Text, View } from '@/components/Themed';
 import { initDb } from '@/lib/db';
 import { clearAllData, countTransactions, listAllTransactions, listCategories, upsertCategory, upsertTransaction } from '@/lib/repo';
 
+const APP_VERSION = require('../app.json')?.expo?.version ?? '0.0.0';
+
 function Item({
   label,
   right,
@@ -46,11 +48,7 @@ function Item({
 export default function SettingsScreen() {
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
-  const version = Constants.expoConfig?.version ?? '0.0.0';
-  const localBuildRaw =
-    (process.env as any)?.EXPO_PUBLIC_LOCAL_BUILD ?? (globalThis as any)?.__FLOW_LOCAL_BUILD__ ?? '2';
-  const localBuildNum = Math.max(0, Math.min(99, Number.parseInt(String(localBuildRaw), 10) || 0));
-  const versionText = `${version}(${localBuildNum})`;
+  const versionText = APP_VERSION || Constants.expoConfig?.version || '0.0.0';
 
   const refresh = useCallback(async () => {
     setCount(await countTransactions());

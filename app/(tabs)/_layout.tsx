@@ -73,6 +73,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: '流水',
+          headerTitle: '',
           tabBarActiveTintColor: '#26A69A',
           tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
           headerRight: () => <HeaderGear colorScheme={colorScheme} />,
@@ -82,6 +83,7 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: '图表',
+          headerTitle: '',
           tabBarActiveTintColor: '#9B59B6',
           tabBarIcon: ({ color }) => <TabBarIcon name="bar-chart" color={color} />,
           headerRight: () => <HeaderGear colorScheme={colorScheme} />,

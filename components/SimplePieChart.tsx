@@ -23,6 +23,10 @@ function describeArc(cx: number, cy: number, r: number, startAngle: number, endA
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} L ${cx} ${cy} Z`;
 }
 
+function isFullCircle(startAngle: number, endAngle: number) {
+  return endAngle - startAngle >= 359.999;
+}
+
 export default function SimplePieChart({
   data,
   size = 220,
@@ -57,9 +61,14 @@ export default function SimplePieChart({
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
         <G>
-          {slices.map((s) => (
-            <Path key={s.label} d={describeArc(r, r, r, s.start, s.end)} fill={s.color} />
-          ))}
+          {slices.map((s) =>
+            isFullCircle(s.start, s.end) ? (
+              // 100% 单分类时，SVG arc 会退化成空路径；这里直接画整圆兜底。
+              <Circle key={s.label} cx={r} cy={r} r={r} fill={s.color} />
+            ) : (
+              <Path key={s.label} d={describeArc(r, r, r, s.start, s.end)} fill={s.color} />
+            )
+          )}
           {/* 中空做成甜甜圈效果 */}
           <Circle cx={r} cy={r} r={innerRadius} fill="#fff" />
         </G>
@@ -67,4 +76,3 @@ export default function SimplePieChart({
     </View>
   );
 }
-
