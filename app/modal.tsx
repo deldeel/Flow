@@ -62,6 +62,17 @@ export default function SettingsScreen() {
 
   const isWeb = Platform.OS === 'web';
 
+  async function doClearAll() {
+    setBusy(true);
+    try {
+      await clearAllData();
+      await initDb();
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function splitNote(raw: string) {
     const s = (raw ?? '').trim();
     const parts = s.split('·').map((x) => x.trim()).filter(Boolean);
@@ -549,25 +560,18 @@ export default function SettingsScreen() {
             label="清空全部数据"
             icon="trash"
             danger
-            onPress={() =>
+            onPress={() => {
+              if (busy) return;
+              if (isWeb && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+                const ok = window.confirm('确定要清空吗？此操作不可恢复。');
+                if (ok) void doClearAll();
+                return;
+              }
               Alert.alert('清空全部数据', '确定要清空吗？此操作不可恢复。', [
                 { text: '取消', style: 'cancel' },
-                {
-                  text: '清空',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setBusy(true);
-                    try {
-                      await clearAllData();
-                      await initDb(); // 重新生成默认分类
-                      await refresh();
-                    } finally {
-                      setBusy(false);
-                    }
-                  },
-                },
-              ])
-            }
+                { text: '清空', style: 'destructive', onPress: () => void doClearAll() },
+              ]);
+            }}
           />
         </RNView>
 
