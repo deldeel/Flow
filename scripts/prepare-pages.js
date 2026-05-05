@@ -44,7 +44,7 @@ function sanitizeBuildId(id) {
 function getLocalBuildNumber() {
   const raw = process.env.EXPO_PUBLIC_LOCAL_BUILD ?? process.env.FLOW_LOCAL_BUILD ?? process.env.LOCAL_BUILD;
   const n = Number.parseInt(String(raw ?? ''), 10);
-  if (!Number.isFinite(n)) return 1;
+  if (!Number.isFinite(n)) return 2;
   return Math.max(0, Math.min(99, n));
 }
 

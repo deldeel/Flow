@@ -48,7 +48,7 @@ export default function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const version = Constants.expoConfig?.version ?? '0.0.0';
   const localBuildRaw =
-    (process.env as any)?.EXPO_PUBLIC_LOCAL_BUILD ?? (globalThis as any)?.__FLOW_LOCAL_BUILD__ ?? '1';
+    (process.env as any)?.EXPO_PUBLIC_LOCAL_BUILD ?? (globalThis as any)?.__FLOW_LOCAL_BUILD__ ?? '2';
   const localBuildNum = Math.max(0, Math.min(99, Number.parseInt(String(localBuildRaw), 10) || 0));
   const versionText = `${version}(${localBuildNum})`;
 
@@ -138,6 +138,13 @@ export default function SettingsScreen() {
   function dayKey(ms: number) {
     const d = new Date(ms);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function getExportBaseName() {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `Flow流水_${mm}${dd}`;
   }
 
   function dedupKey(input: {
@@ -394,12 +401,13 @@ export default function SettingsScreen() {
       });
 
       const csv = toCsv(records as any);
+      const filename = `${getExportBaseName()}.csv`;
       if (isWeb) {
-        downloadOnWeb(`ledger_export_${Date.now()}.csv`, csv, 'text/csv;charset=utf-8');
+        downloadOnWeb(filename, csv, 'text/csv;charset=utf-8');
       } else {
         const dir = getWritableDir();
         if (!dir) throw new Error('文件目录不可用');
-        const path = `${dir}ledger_export_${Date.now()}.csv`;
+        const path = `${dir}${filename}`;
         await writeAsStringAsync(path, csv, { encoding: EncodingType.UTF8 });
         await shareFile(path, { mimeType: 'text/csv', dialogTitle: '导出 CSV' });
       }
@@ -468,18 +476,15 @@ export default function SettingsScreen() {
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
+      const filename = `${getExportBaseName()}.xlsx`;
       if (isWeb) {
         const arr: ArrayBuffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-        downloadOnWeb(
-          `ledger_export_${Date.now()}.xlsx`,
-          arr,
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        );
+        downloadOnWeb(filename, arr, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       } else {
         const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
         const dir = getWritableDir();
         if (!dir) throw new Error('文件目录不可用');
-        const path = `${dir}ledger_export_${Date.now()}.xlsx`;
+        const path = `${dir}${filename}`;
         await writeAsStringAsync(path, b64, { encoding: EncodingType.Base64 });
         await shareFile(path, {
           mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
