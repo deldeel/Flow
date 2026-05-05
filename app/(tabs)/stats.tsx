@@ -449,8 +449,8 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F2F7', paddingHorizontal: 16, paddingTop: 10 },
-  bigTitle: { fontSize: 34, fontWeight: '900', marginTop: 2, marginBottom: 10 },
+  container: { flex: 1, backgroundColor: '#F2F2F7', paddingHorizontal: 16, paddingTop: 2 },
+  bigTitle: { fontSize: 34, fontWeight: '900', marginTop: 0, marginBottom: 10 },
 
   switchWrap: { alignItems: 'center' },
   switchRow: {

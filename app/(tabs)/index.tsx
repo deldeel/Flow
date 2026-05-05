@@ -331,7 +331,7 @@ export default function EntryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
-  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
+  content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
   money: { fontSize: 56, fontWeight: '800', color: '#5CB85C' },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#D9D9D9', marginTop: 10, marginBottom: 14 },
 
