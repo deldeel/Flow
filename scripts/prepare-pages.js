@@ -41,6 +41,13 @@ function sanitizeBuildId(id) {
   return String(id).replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 32) || 'dev';
 }
 
+function getLocalBuildNumber() {
+  const raw = process.env.EXPO_PUBLIC_LOCAL_BUILD ?? process.env.FLOW_LOCAL_BUILD ?? process.env.LOCAL_BUILD;
+  const n = Number.parseInt(String(raw ?? ''), 10);
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(0, Math.min(99, n));
+}
+
 function writeServiceWorker(dist, basePath, entrySrc) {
   // 生成 SW，确保首次联网打开后关键资源都被预缓存（尤其是 entry-*.js）
   const buildId = sanitizeBuildId(getBuildId());
@@ -166,12 +173,13 @@ function main() {
   // 注册 Service Worker（离线可用）
   html = fs.readFileSync(indexHtml, 'utf8');
   if (!html.includes('service-worker.js')) {
+    const localBuild = getLocalBuildNumber();
     const swRegister = `
 <script>
   (function () {
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', function () {
-      window.__FLOW_BUILD__ = '${buildId}';
+      window.__FLOW_LOCAL_BUILD__ = ${localBuild};
       navigator.serviceWorker.register('/${basePath}/service-worker.js', { scope: '/${basePath}/' }).catch(function(){});
     });
   })();

@@ -46,9 +46,11 @@ function Item({
 export default function SettingsScreen() {
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
-  const version = Constants.expoConfig?.version ?? '1.0.0';
-  const build = (globalThis as any)?.__FLOW_BUILD__ as string | undefined;
-  const versionText = build ? `${version} (${String(build).slice(0, 12)})` : version;
+  const version = Constants.expoConfig?.version ?? '0.0.0';
+  const localBuildRaw =
+    (process.env as any)?.EXPO_PUBLIC_LOCAL_BUILD ?? (globalThis as any)?.__FLOW_LOCAL_BUILD__ ?? '1';
+  const localBuildNum = Math.max(0, Math.min(99, Number.parseInt(String(localBuildRaw), 10) || 0));
+  const versionText = `${version}(${localBuildNum})`;
 
   const refresh = useCallback(async () => {
     setCount(await countTransactions());
